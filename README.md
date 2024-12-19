@@ -23,7 +23,7 @@ host-under-test.
 To pull down the whole codebase including the submodule 
 test runner issue the following command.
 
-`git clone --recurse-submodules https://github.com/rh-openjdk/run-folder-as-tests.git`
+`git clone --recurse-submodules https://github.com/rh-openjdk/jlinktests.git`
 
 To run the testsuite, use the runner in the runner folder.
 `bash runner/run_jlink_tests.sh`
