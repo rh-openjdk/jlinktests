@@ -1,0 +1,3 @@
+[submodule "run-folder-as-tests"]
+	path = run-folder-as-tests
+	url = https://github.com/rh-openjdk/run-folder-as-tests
