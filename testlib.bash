@@ -152,27 +152,6 @@ function diffImages() {
   du $PWD/$1/lib/modules $PWD/$2/lib/modules 
 }
 
-
-## TODO: Confirm this can be removed.
-function set_cont_reg_mirror() {
-# Add support for a container registry mirror on hydra. This will overwrite the
-# existing contents of the file. This is 99% comments so it should be fine.
-# Before this is commited, the team should finalize the set of repositories.
- local CONT_REG="/etc/containers/registries.conf"
- sudo tee $CONT_REG << "EOF"
-unqualified-search-registries = [ "registry.access.redhat.com", "docker.io"]
-[[registry]]
-prefix = "docker.io"
-insecure = true
-location = "docker.io"
-[[registry.mirror]]
-prefix = "hydra.brq.redhat.com:6000"
-insecure = true
-location = "hydra.brq.redhat.com:6000"
-EOF
-}
-
-
 # without cleaned images, the image cache canbe reused, and then the "hello world" is not printed out
 function cleanRuntimeImages() {
   set +e
