@@ -341,7 +341,7 @@ function pullAllImages() {
     pullSelectedImage quay.io/centos/centos "centos$x"
   done
  for x in  `listFedoras` ; do 
-    pullSelectedImage fedora $x
+    pullSelectedImage quay.io/fedora/fedora $x
   done
 }
 
