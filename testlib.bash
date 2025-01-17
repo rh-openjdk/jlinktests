@@ -175,7 +175,7 @@ function runImageInPodman() {
 FROM $os
 RUN  whoami
 EOF
-if [ "$os" == "quay.io/centos/centos:7" ] ; then
+if echo "$os" | grep -e "centos:7" ; then
     cat <<EOF >> $podmanfile
 RUN  sed -i -e 's!mirrorlist!#mirrorlist!g' /etc/yum.repos.d/CentOS-Base.repo
 RUN  if \[ "$(uname -m)" = "aarch64" \]; then \\  
