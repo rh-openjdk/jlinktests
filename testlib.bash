@@ -175,7 +175,7 @@ function runImageInPodman() {
 FROM $os
 RUN  whoami
 EOF
-if [ "$os" == "centos:centos7" ] ; then
+if echo "$os" | grep -e "centos:7" ; then
     cat <<EOF >> $podmanfile
 RUN  sed -i -e 's!mirrorlist!#mirrorlist!g' /etc/yum.repos.d/CentOS-Base.repo
 RUN  if \[ "$(uname -m)" = "aarch64" \]; then \\  
@@ -263,6 +263,7 @@ function prepareImages() {
 }
 
 ## TODO: Remove this
+## TODO: This method will be removed with the next maintenance update of this code.
 function runLocalTestOfLib() {
   setup
   generate_images=true
@@ -336,12 +337,16 @@ function listFedoras() {
  curl -s -L https://fedorapeople.org/groups/qa/metadata/release.json | jq '.fedora.stable[]'
 }
 
+## Define the FDN for the container images to be used.
+export CENTOS_IMAGE_FQN="quay.io/centos/centos"
+export FEDORA_IMAGE_FQN="quay.io/fedora/fedora"
+
 function pullAllImages() {
   for x in 7 8 ; do 
-    pullSelectedImage quay.io/centos/centos "centos$x"
+    pullSelectedImage "$CENTOS_IMAGE_FQN" $x
   done
  for x in  `listFedoras` ; do 
-    pullSelectedImage quay.io/fedora/fedora $x
+    pullSelectedImage "$FEDORA_IMAGE_FQN" $x
   done
 }
 
@@ -356,14 +361,15 @@ function isFromRpm() {
 
 function runOnRhelLimited() {
   if [ `isFromRpm` == "yes" -a `getOsName` == "centos" -a `getOsMajor` -le "$2"  ] ; then
-    runImageInPodman $1 centos:"$2"  "$3"
+    runImageInPodman $1 "$CENTOS_IMAGE_FQN":"$2"  "$3"
   elif [ `isFromRpm` == "no" ] ; then
-    runImageInPodman $1 centos:"$2"  "$3"
+    runImageInPodman $1 "$CENTOS_IMAGE_FQN":"$2"  "$3"
   else
     echo "$SKIPPED"
   fi
 }
 
+##TODO: To be remove in the next maintenance update.
 function runOnRhel6() {
   runOnRhelLimited $1 6 $2
 }
@@ -377,11 +383,11 @@ function runOnRhel8() {
 
 function runOnFedora() {
   if [ `isFromRpm` == "yes" -a `getOsName` == "centos"  ] ; then
-    runImageInPodman $1 fedora:"$2"  "$3"
+    runImageInPodman $1 "$FEDORA_IMAGE_FQN":"$2"  "$3"
   elif [ `isFromRpm` == "yes" -a `getOsName` == "fedora" -a `getOsMajor` -le $2 ] ; then
-    runImageInPodman $1 fedora:"$2"  "$3"
+    runImageInPodman $1 "$FEDORA_IMAGE_FQN":"$2"  "$3"
   elif [ `isFromRpm` == "no" ] ; then
-    runImageInPodman $1 fedora:"$2"  "$3"
+    runImageInPodman $1 "$FEDORA_IMAGE_FQN":"$2"  "$3"
   else
     echo "$SKIPPED"
   fi
