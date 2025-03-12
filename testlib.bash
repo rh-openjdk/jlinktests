@@ -279,8 +279,8 @@ function runLocalTestOfLib() {
   # podman container rm $hashes
   # podman image rm $hashes
   #  rm -rfv ~/.local/share/containers/
-  #centos:centos8 centos:centos7 centos:centos6 fedora:29 fedora:30 fedora:31 
-  for os in fedora:31 ; do
+  #centos:centos8 centos:centos7 centos:centos6 fedora:29 fedora:30 fedora:31 centos:stream9 centos:stream10
+  for os in centos:stream9 ; do
     for image in $OUTPUT_JLINK ; do
     #for image in $OUTPUT_SWINGLINK ; do
       runImageInPodman $image $os  helloworld
@@ -343,7 +343,7 @@ export CENTOS_IMAGE_FQN="quay.io/centos/centos"
 export FEDORA_IMAGE_FQN="quay.io/fedora/fedora"
 
 function pullAllImages() {
-  for x in 7 8 ; do 
+  for x in 7 8 stream9 stream10 ; do 
     pullSelectedImage "$CENTOS_IMAGE_FQN" $x
   done
  for x in  `listFedoras` ; do 
@@ -379,6 +379,12 @@ function runOnRhel7() {
 }
 function runOnRhel8() {
   runOnRhelLimited $1 8 $2
+}
+function runOnRhel9() {
+  runOnRhelLimited $1 stream9 $2
+}
+function runOnRhel10() {
+  runOnRhelLimited $1 stream10 $2
 }
 
 
