@@ -360,8 +360,12 @@ function isFromRpm() {
   fi
 }
 
+function sanitizeStream() {
+  echo "${1}" | sed "s/[^0-9]*//g"
+}
+
 function runOnRhelLimited() {
-  if [ `isFromRpm` == "yes" -a `getOsName` == "centos" -a `getOsMajor` -le "$2"  ] ; then
+  if [ `isFromRpm` == "yes" -a `getOsName` == "centos" -a `getOsMajor` -le `sanitizeStream "$2"`  ] ; then
     runImageInPodman $1 "$CENTOS_IMAGE_FQN":"$2"  "$3"
   elif [ `isFromRpm` == "no" ] ; then
     runImageInPodman $1 "$CENTOS_IMAGE_FQN":"$2"  "$3"
@@ -391,7 +395,7 @@ function runOnRhel10() {
 function runOnFedora() {
   if [ `isFromRpm` == "yes" -a `getOsName` == "centos"  ] ; then
     runImageInPodman $1 "$FEDORA_IMAGE_FQN":"$2"  "$3"
-  elif [ `isFromRpm` == "yes" -a `getOsName` == "fedora" -a `getOsMajor` -le $2 ] ; then
+  elif [ `isFromRpm` == "yes" -a `getOsName` == "fedora" -a `getOsMajor` -le `sanitizeStream "$2"`] ; then
     runImageInPodman $1 "$FEDORA_IMAGE_FQN":"$2"  "$3"
   elif [ `isFromRpm` == "no" ] ; then
     runImageInPodman $1 "$FEDORA_IMAGE_FQN":"$2"  "$3"
