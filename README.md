@@ -31,6 +31,8 @@ To run the testsuite, use the runner in the runner folder.
 `bash runner/run_jlink_tests.sh`
 
 ### WARNING from run-folder-as-tests
+#### results
+By default, /mnt/workspace and /mnt/ramdisk are used. Set them as you need them via ${WORKSPACE} and ${SCRATCH_DISK}
 #### PREP_SCRIPT
 By default, the scripting is trying to execute `PREP_SCRIPT`, to allow you custom preparation of system/jdk before testsuite is run.
 For legacy reasons, this defaults to `/mnt/shared/TckScripts/jenkins/benchmarks/cleanAndInstallRpms.sh`, which you most likely do not have.
