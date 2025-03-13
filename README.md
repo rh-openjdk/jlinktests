@@ -7,12 +7,13 @@ Current supported platforms for execution.
 
 | Platform | Operating System            | 
 |----------|-----------------------------|
-| Linux | Rhel 7                      |
-| Linux | Rhel 8                     |
-| Linux | Rhel 9                      |
-| Linux | Rhel 10                     |
-|Linux | Fedora (current, current-1) |
-| Windows | Windows 2022 |
+| Linux    | Rhel 7                      |
+| Linux    | Rhel 8                      |
+| Linux    | Rhel 9                      |
+| Linux    | Rhel 10                     |
+|Linux     | Fedora (current)            |
+|Linux     | Fedora (current-1)          |
+| Windows  | Windows 2022                |
 
 Setting up the environment for execution:
 
@@ -38,7 +39,7 @@ By default, the scripting is trying to execute `PREP_SCRIPT`, to allow you custo
 For legacy reasons, this defaults to `/mnt/shared/TckScripts/jenkins/benchmarks/cleanAndInstallRpms.sh`, which you most likely do not have.
 If you have it, and want to use it, it will remove all you java rpms and /usr/lib/jvm, and install/unpack JDKs in `/mnt/workspace/rpms`
 If you do not have it, or point `PREP_SCRIPT` to some script of yours, you should  be safe.
-
+Note, that `JLINK_RPM_INSTALL_RUNNER_LOCATION` is partial duplication of `PREP_SCRIPT`,  but not 1to1. Please check code to see the difference.
 #### Custom JDK
 The correct way how to use any installed java, is **optional parameter**, which should point to any `JAVA_HOME`. If used, then `PREP_SCRIPT` is not even called
 ```
