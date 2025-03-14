@@ -41,8 +41,14 @@ jobs:
           java-version: ${{ matrix.jdkver}}
       - name: Run
         run: WORKSPACE=`pwd` SCRATCH_DISK=`pwd` bash runner/run_jlink_tests.sh  "${JAVA_HOME}"
-      - name: cat results, maybe grep it later
+      - name: cat results
         run: cat "results/results.txt"
+      - name: cat summary
+        run: cat "results/results.properties"
+      - name: assert something passed
+        run: cat "results/results.properties" | grep -e 'rhqa.passed=[1-9]'
+      - name: assert nothing failed
+        run: cat "results/results.properties" | grep -e 'rhqa.failed=0'
       - name: Upload results
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
