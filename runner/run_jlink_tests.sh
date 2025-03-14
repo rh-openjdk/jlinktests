@@ -26,8 +26,22 @@ done
 readonly SCRIPT_DIR="$( cd -P "$( dirname "$SCRIPT_SOURCE" )" && pwd )"
 
 echo "Ensure Podman is installed."
-sudo yum install podman -y
+if ! podman --version ;  then
+  if dnf --version ; then
+    cmd=dnf
+  elif yum --version ; then
+    cmd=yum
+  else
+    echo "Sorry, I can install podman only on dnf and yum"
+    exit 1
+  fi
+  if [ `whoami`  ==  "root" ] ; then
+    $cmd install podman -y;
+  else
+   sudo $cmd install podman -y;
+  fi
+fi
 echo "Define the testsuite location."
-JLINK_TEST_CODE_LOCATION=`dirname $SCRIPT_DIR`
+JLINK_TEST_CODE_LOCATION="`dirname "${SCRIPT_DIR}"`"
 
-bash ${JLINK_TEST_CODE_LOCATION}/run-folder-as-tests/run-folder-as-tests.sh $JLINK_TEST_CODE_LOCATION
+bash "${JLINK_TEST_CODE_LOCATION}/run-folder-as-tests/run-folder-as-tests.sh" "${JLINK_TEST_CODE_LOCATION}" ${1}

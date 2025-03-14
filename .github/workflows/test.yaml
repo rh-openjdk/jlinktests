@@ -1,0 +1,57 @@
+name: "test"
+
+on:
+  pull_request:
+    branches:
+      - "*"
+  push:
+    branches:
+      - "*"
+
+jobs:
+  test-linux:
+    name: "Linux podman"
+    runs-on: "ubuntu-latest"
+    strategy:
+      fail-fast: false
+      matrix:
+        jdkconf:
+          - JDK 11
+          - JDK 17
+          - JDK 21
+          - JDK Latest
+        include:
+          - jdkconf: JDK 11
+            jdkver: "11"
+          - jdkconf: JDK 17
+            jdkver: "17"
+          - jdkconf: JDK 21
+            jdkver: "21"
+          - jdkconf: JDK Latest
+            jdkver: "23"
+    steps:
+      - uses: gacts/install-podman@v1
+      - run: podman version
+      - uses: actions/checkout@v3
+      - run: git submodule update --init --recursive
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.jdkver}}
+      - name: Run
+        run: WORKSPACE=`pwd` SCRATCH_DISK=`pwd` bash runner/run_jlink_tests.sh  "${JAVA_HOME}"
+      - name: cat results
+        run: cat "results/results.txt"
+      - name: cat summary
+        run: cat "results/results.properties"
+      - name: assert something passed
+        run: cat "results/results.properties" | grep -e 'rhqa.passed=[1-9]'
+      - name: assert nothing failed
+        run: cat "results/results.properties" | grep -e 'rhqa.failed=0'
+      - name: Upload results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: jlinktests-linux-podman-jdk-${{ matrix.jdkver}}
+          path: "results/jlinktests.tar.gz"

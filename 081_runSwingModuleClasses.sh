@@ -19,6 +19,7 @@ parseArguments "$@"
 processArguments
 setup
 skipOnHeadless
+skipOnGithubActions
   # we are all good on headless, and even have swing compiled, now run it
   runModule swinghello/org.jlink.swingdemo.SwingHello 2>&1| tee "$REPORT_FILE"
   # warning, the exception is from different thread, so program terminates via zero!
