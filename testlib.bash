@@ -18,6 +18,7 @@ SKIPPED_ON_WIN="!skipped!, because is not relevant on windows. !skipped!"
 SKIPPED_ON_AARCH64="!skipped!, because it fails mysteriously on aarch64 !skipped!"
 SKIPPED_ON_HEADLESS_CONTAINER="!skipped!, because this is a headless container. !skipped!"
 SKIPPED_ON_HEADLESS="!skipped! because this is headless system and we require X.  !skipped!"
+SKIPPED_ON_GH="!skipped!  misbehaves in GH actions !skipped!"
 SKIPPED_NO_RPM_INSTALL="!skipped! because a rpm install/uninstall process must be defined.  !skipped!"
 
 function parseArguments() {
@@ -482,6 +483,13 @@ function exitOnAarch64() {
 function exitSwingAppOnHeadleassContainer() {
 	  echo "$SKIPPED_ON_HEADLESS_CONTAINER"
 	  exit 0
+}
+
+function skipOnGithubActions() {
+  if [ ! "x$GITHUB_ACTION" == "x" ]; then
+    echo "$SKIPPED_ON_GH"
+    exit 0
+  fi
 }
 
 function skipOnHeadless() {

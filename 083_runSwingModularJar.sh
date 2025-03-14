@@ -19,6 +19,7 @@ parseArguments "$@"
 processArguments
 setup
 skipOnHeadless
+skipOnGithubActions
   # we are all good on headless, and even have swing compiled, now run it
   runModularJar swinghello 2>&1| tee "$REPORT_FILE"
   assertSwingHello
