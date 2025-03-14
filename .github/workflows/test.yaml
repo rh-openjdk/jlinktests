@@ -46,6 +46,6 @@ jobs:
         run: bash runner/run_jlink_tests.sh  "${JAVA_HOME}"
       - name: Upload results
         if: ${{ always() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: "test.*.tar.gz"
