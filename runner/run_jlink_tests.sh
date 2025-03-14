@@ -42,6 +42,6 @@ if ! podman --version ;  then
   fi
 fi
 echo "Define the testsuite location."
-JLINK_TEST_CODE_LOCATION=`dirname $SCRIPT_DIR`
+JLINK_TEST_CODE_LOCATION="`dirname "${SCRIPT_DIR}"`"
 
-bash ${JLINK_TEST_CODE_LOCATION}/run-folder-as-tests/run-folder-as-tests.sh $JLINK_TEST_CODE_LOCATION
+bash "${JLINK_TEST_CODE_LOCATION}/run-folder-as-tests/run-folder-as-tests.sh" "${JLINK_TEST_CODE_LOCATION}" ${1}
