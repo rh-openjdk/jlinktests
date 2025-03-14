@@ -43,7 +43,7 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ matrix.jdkver}}
       - name: Run
-        run: bash runner/run_jlink_tests.sh  "${JAVA_HOME}"
+        run: WORKSPACE=`pwd` SCRATCH_DISK=`pwd` bash runner/run_jlink_tests.sh  "${JAVA_HOME}"
       - name: Upload results
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
