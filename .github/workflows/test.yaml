@@ -9,8 +9,8 @@ on:
       - "*"
 
 jobs:
-  test-linux-jmods:
-    name: "Linux podman jmods"
+  test-linux:
+    name: "Linux podman"
     runs-on: "ubuntu-latest"
     strategy:
       fail-fast: false
@@ -19,6 +19,7 @@ jobs:
           - JDK 11
           - JDK 17
           - JDK 21
+          - JDK 25
         include:
           - jdkconf: JDK 11
             jdkver: "11"
@@ -26,6 +27,8 @@ jobs:
             jdkver: "17"
           - jdkconf: JDK 21
             jdkver: "21"
+          - jdkconf: JDK 25
+            jdkver: "25"
     steps:
       - uses: gacts/install-podman@v1
       - run: podman version
@@ -38,8 +41,6 @@ jobs:
           java-version: ${{ matrix.jdkver}}
       - name: copy jdk
         run: cp -r   "${JAVA_HOME}" jdkCopy
-      - name: ensure jdk have jmods
-        run: ls `pwd`/jdkCopy/jmods
       - name: Run
         run: WORKSPACE=`pwd` SCRATCH_DISK=`pwd` bash runner/run_jlink_tests.sh  `pwd`/jdkCopy
       - name: cat results
@@ -65,10 +66,10 @@ jobs:
       fail-fast: false
       matrix:
         jdkconf:
-          - JDK Latest
+          - JDK 25
         include:
-          - jdkconf: JDK Latest
-            jdkver: "23"
+          - jdkconf: JDK 25
+            jdkver: "25"
     steps:
       - uses: gacts/install-podman@v1
       - run: podman version
@@ -82,7 +83,7 @@ jobs:
       - name: copy jdk
         run: cp -r   "${JAVA_HOME}" jdkCopy
       - name: ensure jdk do NOT have jmods
-        run: if [ -e `pwd`/jdkCopy/jmods ] ; then exit 1 ; fi
+        run: if [ ! -e `pwd`/jdkCopy/jmods ] ; then echo "no jmods to remove, continuing" ; else rm -rv jdkCopy/jmods ; fi
       - name: Run
         run: WORKSPACE=`pwd` SCRATCH_DISK=`pwd` bash runner/run_jlink_tests.sh  `pwd`/jdkCopy
       - name: cat results
@@ -97,5 +98,5 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: jlinktests-linux-podman-jdk-${{ matrix.jdkver}}
+          name: jlinktests-linux-podman-jmodless-jdk-${{ matrix.jdkver}}
           path: "results/jlinktests.tar.gz"
