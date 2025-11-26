@@ -167,7 +167,7 @@ function runImageInPodman() {
   local os=$2
   local jlinkimage=$1
   local module=$3
-  local DEPS=" libXext libXrender libXtst freetype util-linux"
+  local DEPS=" libXext libXrender libXtst freetype util-linux /usr/bin/su"
   # on some containers you are root but do not have sudo
   # on some you are different user, but have sudo
   # only seldom you are root with sudo
