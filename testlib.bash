@@ -79,7 +79,9 @@ function setup() {
   OUTPUT_JLINKS=hell-test
   OUTPUT_LAUNCH=hell-launch
   OUTPUT_SWINGLINK=hell-swing
-  setJdkVersion
+  set +e
+    setJdkVersion
+  set -e
 }
 
 function setupModuleSources() {
@@ -185,13 +187,18 @@ function runImageInPodman() {
   local jlinkimage=$1
   local module=$3
   local DEPS=" libXext libXrender libXtst freetype util-linux /usr/bin/su"
+  local secOps="--security-opt seccomp=unconfined  --cap-add=SYS_ADMIN"
+  local WORKAROUND_MISSING_LIB64="false" # todo, decide when and if to fix: (jdk26+?, el7 container only?, Build origin only fedora, or also devkit based?
+  #if [ $JDK_MAJOR -ge 25 ] ; then
+    local WORKAROUND_MISSING_LIB64="true"
+  #fi 
   # on some containers you are root but do not have sudo
   # on some you are different user, but have sudo
   # only seldom you are root with sudo
   # rm on .locks is fixing strange issues on rhel7 after 1.1.2020, where suddenly useradd tester was failing
     cat <<EOF > $podmanfile
 FROM $os
-RUN  whoami
+RUN whoami
 EOF
   if echo "$os" | grep -e "centos:7" ; then
     cat <<EOF >> $podmanfile
@@ -219,25 +226,27 @@ RUN  ps -A | head -n 10
 RUN  sudo cat     /etc/passwd.lock  /etc/shadow.lock /etc/group.lock /etc/gshadow.lock "/etc/passwd.*"  "/etc/shadow.*" "/etc/group.*" "/etc/gshadow.*"|| true
 RUN  sudo rm -rvf /etc/passwd.lock  /etc/shadow.lock /etc/group.lock /etc/gshadow.lock "/etc/passwd.*"  "/etc/shadow.*" "/etc/group.*" "/etc/gshadow.*"|| true
 RUN  ps -A | head -n 10
-RUN  getenforce|| true
+RUN getenforce|| true
+RUN useradd tester || true
 EOF
-  local WORKAROUND_MISSING_LIB64="false" # todo, decide when and if to fix: (jdk26+?, el7 container only?, Build origin only fedora, or also devkit based?
-  #if [ $JDK_MAJOR -ge 25 ] ; then
-    local WORKAROUND_MISSING_LIB64="true"
-  #fi 
   if [ $WORKAROUND_MISSING_LIB64 == "true" ] ; then
       cat <<EOF >> $podmanfile
 RUN  if sudo dnf install -y glibc ; then echo "dnf did"; elif sudo yum install -y glibc ; then echo "yum did"; else echo "both yum and dnf failed"; fi || echo "failed to install /lib64/libm.so.6 for JDK-$JDK_MAJOR"
 EOF
   fi
   cat <<EOF >> $podmanfile
-RUN  a=0; sudo useradd tester || a=\$? ; if [ \$a -eq 0 ] ; then echo "as tester" && su tester -c "DISPLAY=:0 /$jlinkimage/bin/java -m $module" ; else echo "as \$(whoami)" && bash -c "DISPLAY=:0 /$jlinkimage/bin/java -m $module" ; fi
+RUN cat <<END > /runit.bash
+cat /runit.bash
+whoami
+getenforce|| true
+if cat /etc/passwd | grep "tester:"  ; then echo "as tester" && su tester -c "DISPLAY=:0 /$jlinkimage/bin/java -m $module" ; else echo "as \\\$(whoami)" && bash -c "DISPLAY=:0 /$jlinkimage/bin/java -m $module" ; fi
+END
 EOF
-  podman build --network host -f $podmanfile
-  # fixe me - do not run application in build step
-  # xonisder adding --security-opt seccomp=unconfined  --cap-add=SYS_ADMIN  to run to prevent 
+  local tagname=$(echo $os-$jlinkimage-$module| sed 's/[^a-zA-Z0-9]/_/g' )-jlinktests:$(date +%s)
+  podman build $secOps --tag $tagname --network host -f $podmanfile
+  # conisder adding --security-opt seccomp=unconfined  --cap-add=SYS_ADMIN  to run to prevent 
   # error while loading shared libraries: /lib64/libc.so.6: cannot apply additional memory protection after relocation: Permission denied
-  # 
+  podman run $secOps --network host --rm -ti $tagname bash /runit.bash
   
 }
 
@@ -297,8 +306,8 @@ function prepareImages() {
   # for fun, try to diff the individual jlink images - there really are native awt bits in swing one, and modules files differs a lot
 }
 
-## TODO: Remove this
-## TODO: This method will be removed with the next maintenance update of this code.
+## do not Remove this
+## it is great testing method
 function runLocalTestOfLib() {
   setup
   generate_images=true
@@ -429,7 +438,7 @@ function runOnRhel10() {
 function runOnFedora() {
   if [ `isFromRpm` == "yes" -a `getOsName` == "centos"  ] ; then
     runImageInPodman $1 "$FEDORA_IMAGE_FQN":"$2"  "$3"
-  elif [ `isFromRpm` == "yes" -a `getOsName` == "fedora" -a `getOsMajor` -le `sanitizeStream "$2"`] ; then
+  elif [ `isFromRpm` == "yes" -a `getOsName` == "fedora" -a `getOsMajor` -le `sanitizeStream "$2"` ] ; then
     runImageInPodman $1 "$FEDORA_IMAGE_FQN":"$2"  "$3"
   elif [ `isFromRpm` == "no" ] ; then
     runImageInPodman $1 "$FEDORA_IMAGE_FQN":"$2"  "$3"
