@@ -79,6 +79,7 @@ function setup() {
   OUTPUT_JLINKS=hell-test
   OUTPUT_LAUNCH=hell-launch
   OUTPUT_SWINGLINK=hell-swing
+  setJdkVersion
 }
 
 function setupModuleSources() {
@@ -87,6 +88,22 @@ function setupModuleSources() {
   else
     MODULE_SOURCES=$LIBJLINK_SCRIPT_DIR/src
   fi  
+}
+
+function setJdkVersion() {
+  if [ "x$JDK_MAJOR" == "x" ] ; then 
+    JDK_MAJOR=8
+    if [[ -e "$JAVA/bin/jshell" || -e "$JAVA/bin/jshell.exe" ]] ; then
+      jshellScript="$(mktemp)"
+      printf "System.out.print(Runtime.version().major())\n/exit" > "${jshellScript}"
+      if [ "x$CYGWIN" == "xtrue" ] ; then
+        jshellScript="$(cygpath -aw "${jshellScript}")"
+      fi
+      JDK_MAJOR=$( "$JAVA/bin/jshell" "${jshellScript}" 2> /dev/null  | grep -v -e "Started recording"  -e "copy recording data to file"  -e "^$"  -e "\[" )
+      rm "${jshellScript}"
+    fi
+  fi
+  echo "treating jdk as: $JDK_MAJOR"
 }
 
 # Checks for Windows execution
@@ -203,23 +220,14 @@ RUN  sudo cat     /etc/passwd.lock  /etc/shadow.lock /etc/group.lock /etc/gshado
 RUN  sudo rm -rvf /etc/passwd.lock  /etc/shadow.lock /etc/group.lock /etc/gshadow.lock "/etc/passwd.*"  "/etc/shadow.*" "/etc/group.*" "/etc/gshadow.*"|| true
 RUN  ps -A | head -n 10
 EOF
-  local WORKAROUND_MISSING_LIB64="true" # todo, decide when and if to fixc
+  local WORKAROUND_MISSING_LIB64="false" # todo, decide when and if to fix: (jdk26+?, el7 container only?, Build origin only fedora, or also devkit based?
+  if [ $JDK_MAJOR -ge 25 ] ; then
+    local WORKAROUND_MISSING_LIB64="true"
+  fi 
   if [ $WORKAROUND_MISSING_LIB64 == "true" ] ; then
-    for lib in libm.so.6 ; do
       cat <<EOF >> $podmanfile
-RUN if [ -e /lib/$lib ] ; then \
-      echo "lib variant of $lib exists"; \
-      if [ -e /lib64/$lib ] ; then \
-        echo "lib64 variant of $lib exists"; \
-      else \
-        echo "lib64 variant of $lib do NOT  exists. Creatig."; \
-        ln -sv /lib/$lib /lib64/$lib ; \
-      fi ; \
-    else \
-     echo "lib variant of $lib do NOT  exists" ; \
-   fi
+RUN  if sudo dnf install -y glibc ; then echo "dnf did"; elif sudo yum install -y glibc ; then echo "yum did"; else echo "both yum and dnf failed"; fi || echo "failed to install /lib64/libm.so.6 for JDK-$JDK_MAJOR"
 EOF
-    done
   fi
   cat <<EOF >> $podmanfile
 RUN  a=0; sudo useradd tester || a=\$? ; if [ \$a -eq 0 ] ; then echo "as tester" && su tester -c "DISPLAY=:0 /$jlinkimage/bin/java -m $module" ; else echo "as \$(whoami)" && bash -c "DISPLAY=:0 /$jlinkimage/bin/java -m $module" ; fi
