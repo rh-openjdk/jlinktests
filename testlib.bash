@@ -207,7 +207,7 @@ RUN  if \[ "$(uname -m)" = "aarch64" \]; then \\
      echo "Running on arm64 architecture"; \\  
      sed -i 's|#baseurl=http://mirror.centos.org/altarch/\$releasever/|baseurl=http://vault.centos.org/altarch/7.9.2009/|' /etc/yum.repos.d/CentOS-Base.repo; \\  
    elif \[ "$(uname -m)" = "ppc64le" \]; then \\  
-     echo "Running on ppc64le architecture"; \\  
+	     echo "Running on ppc64le architecture"; \\  
      sed -i 's|#baseurl=http://mirror.centos.org/altarch/\$releasever/|baseurl=http://vault.centos.org/altarch/7.9.2009/|' /etc/yum.repos.d/CentOS-Base.repo; \\  
    else \\  
      # Default To x64; \\  
@@ -235,14 +235,12 @@ RUN  if sudo dnf install -y glibc ; then echo "dnf did"; elif sudo yum install -
 EOF
   fi
   cat <<EOF >> $podmanfile
-RUN cat <<END > /runit.bash
-cat /runit.bash
-whoami
-getenforce|| true
-if cat /etc/passwd | grep "tester:"  ; then echo "as tester" && su tester -c "DISPLAY=:0 /$jlinkimage/bin/java -m $module" ; else echo "as \\\$(whoami)" && bash -c "DISPLAY=:0 /$jlinkimage/bin/java -m $module" ; fi
-END
+RUN echo cat /runit.bash > /runit.bash
+RUN echo whoami >> /runit.bash
+RUN echo getenforce|| true >> /runit.bash
+RUN echo "if cat /etc/passwd | grep \"tester:\"  ; then echo \"as tester\" && su tester -c \"DISPLAY=:0 /$jlinkimage/bin/java -m $module\" ; else echo \"as \\\$(whoami)\" && bash -c \"DISPLAY=:0 /$jlinkimage/bin/java -m $module\" ; fi" >> /runit.bash
 EOF
-  local tagname=$(echo $os-$jlinkimage-$module| sed 's/[^a-zA-Z0-9]/_/g' )-jlinktests:$(date +%s)
+  local tagname=$(echo $os-$jlinkimage-$module | sed 's/.*/\L&/' | sed 's/[^a-zA-Z0-9]/_/g' )-jlinktests:$(date +%s)
   podman build $secOps --tag $tagname --network host -f $podmanfile
   # conisder adding --security-opt seccomp=unconfined  --cap-add=SYS_ADMIN  to run to prevent 
   # error while loading shared libraries: /lib64/libc.so.6: cannot apply additional memory protection after relocation: Permission denied
