@@ -219,11 +219,12 @@ RUN  ps -A | head -n 10
 RUN  sudo cat     /etc/passwd.lock  /etc/shadow.lock /etc/group.lock /etc/gshadow.lock "/etc/passwd.*"  "/etc/shadow.*" "/etc/group.*" "/etc/gshadow.*"|| true
 RUN  sudo rm -rvf /etc/passwd.lock  /etc/shadow.lock /etc/group.lock /etc/gshadow.lock "/etc/passwd.*"  "/etc/shadow.*" "/etc/group.*" "/etc/gshadow.*"|| true
 RUN  ps -A | head -n 10
+RUN  getenforce|| true
 EOF
   local WORKAROUND_MISSING_LIB64="false" # todo, decide when and if to fix: (jdk26+?, el7 container only?, Build origin only fedora, or also devkit based?
-  if [ $JDK_MAJOR -ge 25 ] ; then
+  #if [ $JDK_MAJOR -ge 25 ] ; then
     local WORKAROUND_MISSING_LIB64="true"
-  fi 
+  #fi 
   if [ $WORKAROUND_MISSING_LIB64 == "true" ] ; then
       cat <<EOF >> $podmanfile
 RUN  if sudo dnf install -y glibc ; then echo "dnf did"; elif sudo yum install -y glibc ; then echo "yum did"; else echo "both yum and dnf failed"; fi || echo "failed to install /lib64/libm.so.6 for JDK-$JDK_MAJOR"
@@ -233,6 +234,11 @@ EOF
 RUN  a=0; sudo useradd tester || a=\$? ; if [ \$a -eq 0 ] ; then echo "as tester" && su tester -c "DISPLAY=:0 /$jlinkimage/bin/java -m $module" ; else echo "as \$(whoami)" && bash -c "DISPLAY=:0 /$jlinkimage/bin/java -m $module" ; fi
 EOF
   podman build --network host -f $podmanfile
+  # fixe me - do not run application in build step
+  # xonisder adding --security-opt seccomp=unconfined  --cap-add=SYS_ADMIN  to run to prevent 
+  # error while loading shared libraries: /lib64/libc.so.6: cannot apply additional memory protection after relocation: Permission denied
+  # 
+  
 }
 
 
