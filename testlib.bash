@@ -188,7 +188,7 @@ function runImageInPodman() {
   local os=$2
   local jlinkimage=$1
   local module=$3
-  local DEPS=" libXext libXrender libXtst freetype util-linux /usr/bin/su"
+  local DEPS=" libXext libXrender libXtst freetype util-linux /usr/bin/su util-linux"
   local secOps="--security-opt seccomp=unconfined  --cap-add=SYS_ADMIN"
   local WORKAROUND_MISSING_LIB64="false" # todo, decide when and if to fix: (jdk26+?, el7 container only?, Build origin only fedora, or also devkit based?
   #if [ $JDK_MAJOR -ge 25 ] ; then
@@ -219,28 +219,28 @@ RUN  if \[ "$(uname -m)" = "aarch64" \]; then \\
 EOF
   fi
   cat <<EOF >> $podmanfile
-RUN  if dnf install -y sudo ; then echo "dnf did"; elif yum install -y sudo ; then echo "yum did"; else echo "both yum and dnf failed"; fi || true
-RUN  if sudo dnf install -y /usr/bin/ps ; then echo "dnf did"; elif sudo yum install -y /usr/bin/ps ; then echo "yum did"; else echo "both yum and dnf failed"; fi  || true
-RUN  if sudo dnf install -y $DEPS ; then echo "dnf did"; elif sudo yum install -y $DEPS ; then echo "yum did"; else echo "both yum and dnf failed"; fi
+RUN  if dnf install -y /usr/bin/ps ; then echo "dnf did"; elif yum install -y /usr/bin/ps ; then echo "yum did"; else echo "both yum and dnf failed"; fi  || true
+RUN  if dnf install -y $DEPS ; then echo "dnf did"; elif yum install -y $DEPS ; then echo "yum did"; else echo "both yum and dnf failed"; fi
 RUN  mkdir /$jlinkimage
 COPY $jlinkimage /$jlinkimage/
 RUN  ps -A | head -n 10
-RUN  sudo cat     /etc/passwd.lock  /etc/shadow.lock /etc/group.lock /etc/gshadow.lock "/etc/passwd.*"  "/etc/shadow.*" "/etc/group.*" "/etc/gshadow.*"|| true
-RUN  sudo rm -rvf /etc/passwd.lock  /etc/shadow.lock /etc/group.lock /etc/gshadow.lock "/etc/passwd.*"  "/etc/shadow.*" "/etc/group.*" "/etc/gshadow.*"|| true
+RUN  cat     /etc/passwd.lock  /etc/shadow.lock /etc/group.lock /etc/gshadow.lock "/etc/passwd.*"  "/etc/shadow.*" "/etc/group.*" "/etc/gshadow.*"|| true
+RUN  rm -rvf /etc/passwd.lock  /etc/shadow.lock /etc/group.lock /etc/gshadow.lock "/etc/passwd.*"  "/etc/shadow.*" "/etc/group.*" "/etc/gshadow.*"|| true
 RUN  ps -A | head -n 10
 RUN getenforce|| true
 RUN useradd tester || true
 EOF
   if [ $WORKAROUND_MISSING_LIB64 == "true" ] ; then
       cat <<EOF >> $podmanfile
-RUN  if sudo dnf install -y glibc ; then echo "dnf did"; elif sudo yum install -y glibc ; then echo "yum did"; else echo "both yum and dnf failed"; fi || echo "failed to install /lib64/libm.so.6 for JDK-$JDK_MAJOR"
+RUN  if dnf install -y glibc ; then echo "dnf did"; elif yum install -y glibc ; then echo "yum did"; else echo "both yum and dnf failed"; fi || echo "failed to install /lib64/libm.so.6 for JDK-$JDK_MAJOR"
 EOF
   fi
   cat <<EOF >> $podmanfile
 RUN echo cat /runit.bash > /runit.bash
 RUN echo whoami >> /runit.bash
 RUN echo getenforce|| true >> /runit.bash
-RUN echo "if cat /etc/passwd | grep \"tester:\"  ; then echo \"as tester\" && su tester -c \"DISPLAY=:0 /$jlinkimage/bin/java -m $module\" ; else echo \"as \\\$(whoami)\" && bash -c \"DISPLAY=:0 /$jlinkimage/bin/java -m $module\" ; fi" >> /runit.bash
+RUN echo "DISPLAY=:0 /$jlinkimage/bin/java -m $module" >> /runit.bash
+USER tester
 EOF
   local tagname=$(echo $os-$jlinkimage-$module | sed 's/.*/\L&/' | sed 's/[^a-zA-Z0-9]/_/g' )-$jlinktest:$(date +%s)
   podman build $secOps --tag $tagname --network host -f $podmanfile
