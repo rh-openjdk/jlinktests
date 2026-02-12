@@ -21,6 +21,8 @@ SKIPPED_ON_HEADLESS="!skipped! because this is headless system and we require X.
 SKIPPED_ON_GH="!skipped!  misbehaves in GH actions !skipped!"
 SKIPPED_NO_RPM_INSTALL="!skipped! because a rpm install/uninstall process must be defined.  !skipped!"
 
+jlinktest=jlinktest
+
 function parseArguments() {
   for a in "$@"
   do
@@ -240,7 +242,7 @@ RUN echo whoami >> /runit.bash
 RUN echo getenforce|| true >> /runit.bash
 RUN echo "if cat /etc/passwd | grep \"tester:\"  ; then echo \"as tester\" && su tester -c \"DISPLAY=:0 /$jlinkimage/bin/java -m $module\" ; else echo \"as \\\$(whoami)\" && bash -c \"DISPLAY=:0 /$jlinkimage/bin/java -m $module\" ; fi" >> /runit.bash
 EOF
-  local tagname=$(echo $os-$jlinkimage-$module | sed 's/.*/\L&/' | sed 's/[^a-zA-Z0-9]/_/g' )-jlinktests:$(date +%s)
+  local tagname=$(echo $os-$jlinkimage-$module | sed 's/.*/\L&/' | sed 's/[^a-zA-Z0-9]/_/g' )-$jlinktest:$(date +%s)
   podman build $secOps --tag $tagname --network host -f $podmanfile
   # conisder adding --security-opt seccomp=unconfined  --cap-add=SYS_ADMIN  to run to prevent 
   # error while loading shared libraries: /lib64/libc.so.6: cannot apply additional memory protection after relocation: Permission denied
@@ -347,19 +349,34 @@ function runLocalTestOfLib() {
 #                 thus testing whole scale               #
 #         rhel6,7,8 fedora rawhide, latest and latest-1) #
 ##########################################################
+# TODO, replace by sourcing of /etc/os-release 
 function getOsMajor() {
-  cat /etc/redhat-release   | sed "s/\..*//g" | sed "s/[^0-9]\+//g"
-}
-
-function getOsMinor() {
-  cat /etc/redhat-release   | sed "s/\./06090/g" | sed "s/[^0-9]\+//g" | sed "s/06090/./g"
-}
-
-function getOsName() {
-  if cat /etc/redhat-release | grep -iq Fedora ; then
-    echo "fedora"
+  if [ -e /etc/redhat-release ] ; then
+    cat /etc/redhat-release   | sed "s/\..*//g" | sed "s/[^0-9]\+//g"
   else
-    echo "centos"
+    echo 0 #something
+  fi
+}
+
+# TODO, replace by sourcing of /etc/os-release 
+function getOsMinor() {
+  if [ -e /etc/redhat-release ] ; then
+    cat /etc/redhat-release   | sed "s/\./06090/g" | sed "s/[^0-9]\+//g" | sed "s/06090/./g"
+  else
+    echo 0 #something
+  fi
+}
+
+# TODO, replace by sourcing of /etc/os-release 
+function getOsName() {
+  if [ -e /etc/redhat-release ] ; then
+    if cat /etc/redhat-release | grep -iq Fedora ; then
+      echo "fedora"
+    else
+      echo "centos"
+    fi
+  else
+    echo "unknown" # ?
   fi
 }
 
@@ -458,7 +475,7 @@ function runOnFedoraRawhide() {
 }
 
 function getFedoras() {
-  podman images --format "table  {{.Repository}} {{.Tag}}" | grep fedora | sed "s/.* //g" | grep "^[0-9]\+$" | sort
+  podman images --format "table  {{.Repository}} {{.Tag}}" | grep -v -e -$jlinktest  | grep fedora | sed "s/.* //g" | grep "^[0-9]\+$" | sort
 }
 
 function getFedoraIdN() {
