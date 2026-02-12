@@ -177,21 +177,38 @@ function diffImages() {
 # without cleaned images, the image cache canbe reused, and then the "hello world" is not printed out
 function cleanRuntimeImages() {
   set +e
-   podman image rm `podman images --format "table  {{.Repository}} {{.ID}}"  | grep "<none>" | sed "s/.* //"`
+   podman image rm -f `podman images --format "table  {{.Repository}} {{.ID}}"  | grep "<none>" | sed "s/.* //"`
   set -e
+}
+
+function cleanLeftoverImages() {
+  set +e
+   podman image rm -f `podman images --format "table  {{.Repository}} {{.ID}}"  | grep -e "-$jlinktest" | sed "s/.* //"`
+  set -e
+}
+
+function cleanImages() {
+  cleanRuntimeImages
+  # nto removing the steps cache is speeding suite aprox 3x
+  if [ "x$CLEAN_IMAGES" == "xtrue" ] ; then
+    cleanLeftoverImages
+  fi
 }
 
 # warning when podman copy dir, only its content is copied
 function runImageInPodman() {
-  cleanRuntimeImages
+  cleanImages
   local podmanfile=Dockerfile
   local os=$2
   local jlinkimage=$1
   local module=$3
   local DEPS=" libXext libXrender libXtst freetype util-linux /usr/bin/su util-linux"
-  local secOps="--security-opt seccomp=unconfined  --cap-add=SYS_ADMIN"
+  local secOps=""
+  #if [ "$SEC_OPS" == "true" ] ; then  
+    local secOps="--security-opt seccomp=unconfined  --cap-add=SYS_ADMIN"
+  #fi
   local WORKAROUND_MISSING_LIB64="false" # todo, decide when and if to fix: (jdk26+?, el7 container only?, Build origin only fedora, or also devkit based?
-  #if [ $JDK_MAJOR -ge 25 ] ; then
+  #if [ "0$JDK_MAJOR" -ge "25" ] ; then
     local WORKAROUND_MISSING_LIB64="true"
   #fi 
   # on some containers you are root but do not have sudo
