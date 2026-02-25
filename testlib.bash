@@ -73,6 +73,7 @@ function setup() {
       echo "Using pre-set DISPLAY=$DISPLAY"
     fi
   fi
+  sudo loginctl enable-linger 1001 || echo "cgrouops v2 setu failed. Legacy system? Expect failures..."
   setupModuleSources
   OUTPUT=mods
   OUTPUT_PACKS=mods-packs
